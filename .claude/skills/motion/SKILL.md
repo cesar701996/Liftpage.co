@@ -40,6 +40,7 @@ A hero video is the easiest way to make a fast site slow, so it has a budget:
 
 - 6 seconds or less, no sound track, around 1 MB and never over 2 MB.
 - `autoplay muted loop playsinline`, with a poster image so something shows before the video loads.
+- When the footage doesn't loop cleanly, a good default is to play it once when it scrolls into view and let it rest on its last frame. That avoids a visible loop seam, and as long as the clip runs five seconds or less it also avoids the need for a pause control.
 - Under reduced motion, show the poster and don't play.
 - Don't load it on the first screen of a phone unless it is the whole point of the page.
 
@@ -64,11 +65,21 @@ if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
 
 ## Footage with Higgsfield
 
-The Higgsfield connector can look things up but can't start a generation. So the work splits in three:
+Claude makes the clip itself. The Higgsfield connector can generate video directly, so there is no step where the user runs it by hand. A session may also show an older Higgsfield connector that can only look things up. Use the one that has a generate tool.
 
-1. **Claude writes the shot.** Check the credit balance and say what it is. Look up the current models and their settings with the connector instead of trusting memory, since the list changes. Then give a brief the user can paste: model, aspect ratio (16:9 for a hero, 9:16 for Instagram or TikTok), length, resolution, sound off, and the prompt.
-2. **The user runs it in Higgsfield.**
-3. **Claude finishes it.** Find the clip in the generation history, download it, run `scripts/web-video.sh`, and place it using the markup above.
+Every generation spends the user's credits, so the order matters:
+
+1. **Check the balance.** Look up the credit balance first and tell the user what it is.
+2. **Look up the models.** Get the current video models and their settings from the connector instead of trusting memory. The list and the costs change.
+3. **Price the clip before making it.** Settle the aspect ratio (16:9 for a hero, 9:16 for Instagram or TikTok), the length and the resolution. Then use the generate tool's cost preview option, which returns the cost without making anything, and tell the user what it is. Never generate without knowing the cost, and never retry a generation blindly, because each one spends credits. If the default model costs more than the balance, price cheaper models, then say which one was picked and why.
+4. **Turn sound off unless sound is wanted.** A hero video plays muted anyway. On at least one model, turning sound off cut the cost in half, so make sure the cost in step 3 was taken with sound off.
+5. **Generate one clip.** Wait for it to finish, then download it. If it seems to fail or time out, check the generation history before trying again, because it may have gone through.
+6. **Check the result frame by frame before using it.** Pull the frames out as still images and look through them. AI video often adds made-up brand marks or lettering even when the prompt says not to, and it may move the camera when asked to hold it still. Crop or trim stray lettering out, or use a different take. A new take is a new generation, so price it first.
+7. **Compress and place it.** Run `scripts/web-video.sh` on the clip, then place it with the markup under "Video on a page".
+
+Some plans include an "unlimited" allowance for certain models. Using it has to be the user's explicit choice. If the connector asks whether to use it, pass the question to the user and wait for the answer.
+
+This is how it worked on 2026-11-16. If the connector has changed since, the tool names may differ, but the order still holds: know the balance and the cost before anything is generated.
 
 Writing the prompt:
 
